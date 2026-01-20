@@ -8,6 +8,8 @@ data class ShortenUrlResponse(
 )
 
 data class ShortenUrlRequest(
-        val url: String
+    val url: String,
+    val maxClicks: Int? = null,
+    val expirationTimeInMinutes: Long? = null
 )
 

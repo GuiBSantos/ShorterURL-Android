@@ -2,17 +2,63 @@ package com.example.shortenerapp.ui.viewmodel
 
 import android.util.Patterns
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shortenerapp.data.model.HistoricoItem
+import com.example.shortenerapp.data.model.ShortenUrlRequest
 import com.example.shortenerapp.data.repository.UrlRepository
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
 
     val historico = mutableStateListOf<HistoricoItem>()
 
-    fun encurtarUrl(urlDigitada: String, onSuccess: (String) -> Unit, onError: (String) -> Unit) {
+    var isLoadingHistorico = mutableStateOf(false)
+
+    init {
+        carregarHistorico()
+    }
+
+    fun carregarHistorico() {
+        viewModelScope.launch {
+
+            isLoadingHistorico.value = true
+
+            try {
+                val response = repository.getMyUrls()
+                if (response.isSuccessful && response.body() != null) {
+                    val listaDoBackend = response.body()!!
+
+                    historico.clear()
+
+                    listaDoBackend.forEach { item ->
+                        val dataFormatada = item.expiresAt?.replace("T", " ")?.take(16) ?: "Sem data"
+
+                        historico.add(HistoricoItem(
+                            shortCode = item.shortCode,
+                            original = item.url,
+                            encurtada = item.shortUrl,
+                            dataExpiracao = dataFormatada
+                        ))
+                    }
+                }
+            } catch (e: Exception) {
+                println("Erro ao carregar histórico: ${e.message}")
+            } finally {
+                isLoadingHistorico.value = false
+            }
+        }
+    }
+
+    fun encurtarUrl(
+        urlDigitada: String,
+        maxClicks: Int? = null,
+        expirationTime: Long? = null,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
         val urlLimpa = urlDigitada.trim()
 
         if (urlLimpa.isEmpty()) {
@@ -33,7 +79,14 @@ class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
 
         viewModelScope.launch {
             try {
-                val response = repository.shortenUrl(urlParaValidar)
+
+                val request = ShortenUrlRequest(
+                    url = urlParaValidar,
+                    maxClicks = maxClicks,
+                    expirationTimeInMinutes = expirationTime
+                )
+
+                val response = repository.shortenUrl(request)
 
                 if (response.isSuccessful && response.body() != null) {
                     val body = response.body()!!

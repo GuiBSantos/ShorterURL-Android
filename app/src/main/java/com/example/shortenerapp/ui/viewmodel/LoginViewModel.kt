@@ -17,6 +17,13 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
     var loginError by mutableStateOf<String?>(null)
     var loginSuccess by mutableStateOf(false)
 
+    fun resetState() {
+        username = ""
+        password = ""
+        loginError = null
+        loginSuccess = false
+        isLoading = false
+    }
     fun onLoginClick() {
         if (username.isBlank() || password.isBlank()) {
             loginError = "Preencha todos os campos"
@@ -33,8 +40,9 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
 
                 if (response.isSuccessful && response.body() != null) {
 
-                    val token = response.body()!!.token
-                    repository.saveToken(token)
+                    val loginResponse = response.body()!!
+
+                    repository.saveToken(loginResponse.token)
                     loginSuccess = true
                 } else {
                     loginError = "Erro: Usuário ou senha inválidos"
