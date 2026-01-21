@@ -1,129 +1,165 @@
 package com.example.shortenerapp.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.shortenerapp.R
+import com.example.shortenerapp.ui.theme.ArkhipFont
 import com.example.shortenerapp.ui.viewmodel.ProfileViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel,
     onBack: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onToggleTheme: () -> Unit
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Meu Perfil") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Voltar")
-                    }
-                }
-            )
-        }
-    ) { padding ->
+    LaunchedEffect(Unit) {
+        viewModel.fetchUserProfile()
+    }
+
+    val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val isDark = isSystemDark || MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    val bgImageRes = if (isDark) R.drawable.bg_dark_profile else R.drawable.bg_light_profile
+
+    val textColor = Color.White
+    val accentColor = Color(0xFF3B82F6)
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        Image(
+            painter = painterResource(id = bgImageRes),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp),
+                .padding(24.dp)
+                .systemBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
 
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .background(MaterialTheme.colorScheme.primaryContainer, CircleShape),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator()
-                } else {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.Default.ArrowBack, "Voltar", tint = textColor)
+                }
+
+                IconButton(
+                    onClick = onToggleTheme,
+                    modifier = Modifier
+                        .background(Color.White.copy(0.1f), CircleShape)
+                        .border(1.dp, Color.White.copy(0.1f), CircleShape)
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = "Foto",
-                        modifier = Modifier.size(80.dp),
-                        tint = MaterialTheme.colorScheme.primary
+                        imageVector = if (isDark) Icons.Outlined.WbSunny else Icons.Default.NightsStay,
+                        contentDescription = "Tema",
+                        tint = if(isDark) Color.Yellow else textColor
                     )
                 }
             }
 
+            Spacer(modifier = Modifier.height(40.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .background(Color.White.copy(0.1f), CircleShape)
+                    .border(2.dp, accentColor, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = null,
+                    modifier = Modifier.size(60.dp),
+                    tint = textColor
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                text = viewModel.username,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(color = accentColor)
+            } else {
+                Text(
+                    text = viewModel.username,
+                    style = TextStyle(fontFamily = ArkhipFont, fontSize = 28.sp, color = textColor)
+                )
+                Text(
+                    text = viewModel.email,
+                    fontSize = 16.sp,
+                    color = textColor.copy(alpha = 0.7f)
+                )
+            }
 
-            Text(
-                text = viewModel.email,
-                color = Color.Gray,
-                fontSize = 16.sp
-            )
+            Spacer(modifier = Modifier.height(40.dp))
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White.copy(0.05f), RoundedCornerShape(16.dp))
+                    .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(16.dp))
+                    .padding(16.dp)
+            ) {
+                Text("Configurações da Conta", color = accentColor, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = 16.dp))
 
-            ProfileOptionItem(text = "Meus Links (Em breve)") // TODO: implementar contagem depois
-            ProfileOptionItem(text = "Configurações (Modo Escuro)") // TODO: Switch: modo escuro
+                TextButton(onClick = { /* TODO */ }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
+                    Text("Meus Links (Histórico Completo)", color = textColor, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                }
+
+                Divider(color = Color.White.copy(0.1f))
+
+                TextButton(onClick = { /* TODO */ }, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(0.dp)) {
+                    Text("Alterar Senha", color = textColor, modifier = Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Start)
+                }
+            }
 
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
                 onClick = onLogout,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                modifier = Modifier.fillMaxWidth().height(50.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFEF4444).copy(alpha = 0.8f),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text("SAIR DA CONTA")
+                Icon(Icons.Default.ExitToApp, null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Sair da Conta", fontWeight = FontWeight.Bold)
             }
-        }
-    }
-}
-
-@Composable
-fun ProfileOptionItem(text: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(text, modifier = Modifier.weight(1f))
         }
     }
 }

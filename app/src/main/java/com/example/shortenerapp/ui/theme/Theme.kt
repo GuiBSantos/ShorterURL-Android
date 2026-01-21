@@ -9,8 +9,24 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
+val LightBgStart = Color(0xFFE0F7FA)
+val LightBgEnd = Color(0xFFF3E5F5)
+val LightGlassColor = Color.White.copy(alpha = 0.60f)
+val LightAccentStart = Color(0xFF4FC3F7)
+val LightAccentEnd = Color(0xFFBA68C8)
+val LightTextColor = Color(0xFF2C3E50)
+
+val DarkBgStart = Color(0xFF120C34)
+val DarkBgEnd = Color(0xFF241744)
+
+val DarkOrb1 = Color(0xFF6200EA).copy(alpha = 0.5f)
+val DarkOrb2 = Color(0xFFC51162).copy(alpha = 0.5f)
+val DarkGlassColor = Color(0xFF2D2D2D).copy(alpha = 0.30f)
+val DarkBorderColor = Color.White.copy(alpha = 0.2f)
+val DarkTextColor = Color(0xFFF5F5F5)
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
     secondary = PurpleGrey80,

@@ -11,44 +11,49 @@ import kotlinx.coroutines.launch
 
 class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
 
-    var username by mutableStateOf("") // TODO: alterar
-    var password by mutableStateOf("") // TODO: alterar
     var isLoading by mutableStateOf(false)
-    var loginError by mutableStateOf<String?>(null)
-    var loginSuccess by mutableStateOf(false)
+        private set
+
+    var rememberMe by mutableStateOf(true)
 
     fun resetState() {
-        username = ""
-        password = ""
-        loginError = null
-        loginSuccess = false
         isLoading = false
     }
-    fun onLoginClick() {
-        if (username.isBlank() || password.isBlank()) {
-            loginError = "Preencha todos os campos"
+    fun login(email: String, pass: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+
+        if (email.isBlank()) {
+            onError("Preencha o e-mail")
+            return
+        }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            onError("Formato de e-mail inválido")
+            return
+        }
+        if (pass.isBlank()) {
+            onError("Preencha a senha")
             return
         }
 
         isLoading = true
-        loginError = null
 
         viewModelScope.launch {
             try {
-                val request = LoginRequest(username, password)
+                val request = LoginRequest(email = email, password = pass)
                 val response = repository.login(request)
 
                 if (response.isSuccessful && response.body() != null) {
-
                     val loginResponse = response.body()!!
 
                     repository.saveToken(loginResponse.token)
-                    loginSuccess = true
+
+                    repository.saveRememberMe(rememberMe)
+
+                    onSuccess()
                 } else {
-                    loginError = "Erro: Usuário ou senha inválidos"
+                    onError("E-mail ou senha inválidos")
                 }
             } catch (e: Exception) {
-                loginError = "Erro de conexão: ${e.message}"
+                onError("Erro de conexão: ${e.message}")
             } finally {
                 isLoading = false
             }

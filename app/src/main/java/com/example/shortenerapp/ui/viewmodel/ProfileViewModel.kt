@@ -5,24 +5,41 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.shortenerapp.data.local.ThemeManager
 import com.example.shortenerapp.data.local.TokenManager
 import com.example.shortenerapp.data.repository.AuthRepository
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val repository: AuthRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    private val themeManager: ThemeManager
 ) : ViewModel() {
 
     var username by mutableStateOf("Carregando...")
     var email by mutableStateOf("...")
     var isLoading by mutableStateOf(false)
+    var isDarkTheme by  mutableStateOf(false)
 
     init {
-        fetchUserProfile()
+        observeTheme()
     }
 
-    private fun fetchUserProfile() {
+    private fun observeTheme() {
+        viewModelScope.launch {
+            themeManager.isDarkTheme.collect { isDark ->
+                isDarkTheme = isDark
+            }
+        }
+    }
+
+    fun toggleTheme(isChecked: Boolean) {
+        viewModelScope.launch {
+            themeManager.toggleTheme(isChecked)
+        }
+    }
+
+     fun fetchUserProfile() {
         viewModelScope.launch {
             isLoading = true
             try {
@@ -44,5 +61,7 @@ class ProfileViewModel(
 
     fun logout() {
         tokenManager.clearToken()
+        username = "Carregando..."
+        email = "..."
     }
 }

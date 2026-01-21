@@ -25,4 +25,22 @@ class AuthRepository(private val tokenManager: TokenManager) {
     }
 
     suspend fun getUserProfile() = api.getUserProfile()
+
+    suspend fun checkUsernameAvailability(username: String): Result<Boolean> {
+        return try {
+            val response = api.checkUsername(username)
+            if (response.isSuccessful && response.body() != null) Result.success(response.body()!!)
+            else Result.failure(Exception("Erro"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    suspend fun checkEmailAvailability(email: String): Result<Boolean> {
+        return try {
+            val response = api.checkEmail(email)
+            if (response.isSuccessful && response.body() != null) Result.success(response.body()!!)
+            else Result.failure(Exception("Erro"))
+        } catch (e: Exception) { Result.failure(e) }
+    }
+
+    fun saveRememberMe(value: Boolean) { tokenManager.saveRememberMe(value) }
 }

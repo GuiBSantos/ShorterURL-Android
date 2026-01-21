@@ -8,6 +8,7 @@ class TokenManager(context: Context) {
 
     companion object {
         private const val KEY_JWT = "jwt_token"
+        private const val KEY_REMEMBER_ME = "remember_me"
     }
 
     fun saveToken(token: String) {
@@ -20,5 +21,18 @@ class TokenManager(context: Context) {
 
     fun clearToken() {
         prefs.edit().remove(KEY_JWT).apply()
+    }
+
+    fun saveRememberMe(remember: Boolean) {
+        prefs.edit().putBoolean(KEY_REMEMBER_ME, remember).apply()
+    }
+
+    fun isRememberMe(): Boolean {
+
+        return prefs.getBoolean(KEY_REMEMBER_ME, true)
+    }
+
+    fun clearAll() {
+        prefs.edit().clear().apply()
     }
 }

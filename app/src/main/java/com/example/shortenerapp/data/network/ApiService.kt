@@ -13,6 +13,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface ApiService {
 
@@ -33,4 +34,10 @@ interface ApiService {
 
     @GET("auth/me")
     suspend fun getUserProfile(): Response<UserResponse>
+
+    @GET("auth/check-username/{username}")
+    suspend fun checkUsername(@Path("username") username: String): Response<Boolean>
+
+    @GET("auth/check-email")
+    suspend fun checkEmail(@Query("value") email: String): Response<Boolean>
 }
