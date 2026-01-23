@@ -14,3 +14,18 @@ data class RegisterRequest(
     val email: String,
     val password: String
 )
+
+data class ForgotPasswordRequest(
+    val email: String
+)
+
+data class ResetPasswordRequest(
+    val email: String,
+    val code: String,
+    val newPassword: String
+)
+
+data class ValidateCodeRequest(
+    val email: String,
+    val code: String
+)

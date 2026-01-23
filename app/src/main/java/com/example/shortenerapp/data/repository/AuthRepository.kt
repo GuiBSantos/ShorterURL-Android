@@ -1,9 +1,14 @@
 package com.example.shortenerapp.data.repository
 
 import com.example.shortenerapp.data.local.TokenManager
+import com.example.shortenerapp.data.model.ChangePasswordRequest
+import com.example.shortenerapp.data.model.ForgotPasswordRequest
 import com.example.shortenerapp.data.model.LoginRequest
 import com.example.shortenerapp.data.model.RegisterRequest
+import com.example.shortenerapp.data.model.ResetPasswordRequest
+import com.example.shortenerapp.data.model.ValidateCodeRequest
 import com.example.shortenerapp.data.network.RetrofitClient
+import okhttp3.MultipartBody
 
 class AuthRepository(private val tokenManager: TokenManager) {
     private val api = RetrofitClient.getService(tokenManager)
@@ -43,4 +48,14 @@ class AuthRepository(private val tokenManager: TokenManager) {
     }
 
     fun saveRememberMe(value: Boolean) { tokenManager.saveRememberMe(value) }
+
+    suspend fun changePassword(request: ChangePasswordRequest) = api.changePassword(request)
+    suspend fun uploadAvatar(body: MultipartBody.Part) = api.uploadAvatar(body)
+    suspend fun forgotPassword(email: String) = api.forgotPassword(ForgotPasswordRequest(email))
+
+    suspend fun resetPassword(email: String, code: String, newPass: String) = api.resetPassword(
+        ResetPasswordRequest(email, code, newPass)
+    )
+    suspend fun validateCode(email: String, code: String) =
+        api.validateCode(ValidateCodeRequest(email, code))
 }

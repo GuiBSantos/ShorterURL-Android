@@ -77,6 +77,27 @@ fun RegisterScreen(
         )
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
 
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .padding(24.dp),
+            contentAlignment = Alignment.TopEnd
+        ) {
+            IconButton(
+                onClick = onToggleTheme,
+                modifier = Modifier
+                    .background(Color.White.copy(0.1f), CircleShape)
+                    .border(1.dp, Color.White.copy(0.1f), CircleShape)
+            ) {
+                Icon(
+                    imageVector = if (isDark) Icons.Outlined.WbSunny else Icons.Default.NightsStay,
+                    contentDescription = "Tema",
+                    tint = textColor
+                )
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -85,23 +106,6 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopEnd) {
-                IconButton(
-                    onClick = onToggleTheme,
-                    modifier = Modifier
-                        .background(Color.White.copy(0.1f), CircleShape)
-                        .border(1.dp, Color.White.copy(0.1f), CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (isDark) Icons.Outlined.WbSunny else Icons.Default.NightsStay,
-                        contentDescription = "Tema",
-                        tint = if(isDark) Color.Yellow else textColor
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
 
             Text("Nova Conta", style = TextStyle(fontFamily = ArkhipFont, fontSize = 36.sp, color = textColor))
             Text("Junte-se a nós hoje", color = labelColor)

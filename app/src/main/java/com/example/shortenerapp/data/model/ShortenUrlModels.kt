@@ -4,7 +4,7 @@ data class ShortenUrlResponse(
     val url: String,
     val shortCode: String,
     val shortUrl: String,
-    val expiresAt: String? = null
+    val expiresAt: Any? = null
 )
 
 data class ShortenUrlRequest(
