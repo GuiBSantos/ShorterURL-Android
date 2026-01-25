@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shortenerapp.data.model.RegisterRequest
 import com.example.shortenerapp.data.repository.AuthRepository
+import com.example.shortenerapp.ui.utils.ErrorUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -161,8 +162,8 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
                     }
                 }
             } catch (e: Exception) {
-                generalError = "Sem conexão com a internet"
-                onError("Erro de conexão: ${e.message}")
+                generalError = ErrorUtils.parseError(e)
+                onError(generalError!!)
             } finally {
                 isLoading = false
             }

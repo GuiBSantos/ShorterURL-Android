@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.shortenerapp.data.model.HistoricoItem
 import com.example.shortenerapp.data.model.ShortenUrlRequest
 import com.example.shortenerapp.data.repository.UrlRepository
+import com.example.shortenerapp.ui.utils.ErrorUtils
 import kotlinx.coroutines.launch
 
 class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
@@ -32,6 +33,7 @@ class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
                     userAvatarUrl.value = response.body()!!.avatarUrl
                 }
             } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
@@ -60,7 +62,7 @@ class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
                     println("Erro ao carregar histórico: ${e.message}")
                 }
             } catch (e: Exception) {
-                println("Erro crítico: ${e.message}")
+                println("Erro crítico: ${ErrorUtils.parseError(e)}")
             } finally {
                 isLoadingHistorico.value = false
             }
@@ -108,7 +110,7 @@ class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
                     onError("Erro ao encurtar (Cod: ${response.code()})")
                 }
             } catch (e: Exception) {
-                onError("Falha na conexão: ${e.message}")
+                onError(ErrorUtils.parseError(e))
             } finally {
                 isLoadingEncurtar.value = false
             }
@@ -126,7 +128,7 @@ class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
                     onError("Erro ao deletar: ${response.code()}")
                 }
             } catch (e: Exception) {
-                onError("Erro de conexão ao deletar")
+                onError(ErrorUtils.parseError(e))
             }
         }
     }

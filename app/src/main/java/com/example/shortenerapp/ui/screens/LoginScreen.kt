@@ -4,17 +4,13 @@ import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.NightsStay
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +30,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.example.shortenerapp.R
 import com.example.shortenerapp.ui.theme.ArkhipFont
 import com.example.shortenerapp.ui.viewmodel.LoginViewModel
@@ -54,8 +51,9 @@ fun LoginScreen(
     var forgotEmail by remember { mutableStateOf("") }
 
     val context = LocalContext.current
-    val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val isDark = isSystemDark || MaterialTheme.colorScheme.background.luminance() < 0.5f
+
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
     val bgImageRes = if (isDark) R.drawable.bg_dark_login else R.drawable.bg_light_login
 
     val textColor = Color.White
@@ -101,23 +99,43 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(40.dp))
 
             OutlinedTextField(
-                value = email, onValueChange = { email = it; errorMessage = null },
-                label = { Text("E-mail") }, leadingIcon = { Icon(Icons.Default.Email, null, tint = labelColor) },
-                modifier = Modifier.fillMaxWidth(), colors = glassInputColors, shape = RoundedCornerShape(12.dp),
-                singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
+                value = email,
+                onValueChange = { input ->
+                    if (input.length <= 100) {
+                        email = input.filter { !it.isWhitespace() }
+                        errorMessage = null
+                    }
+                },
+                label = { Text("E-mail") },
+                leadingIcon = { Icon(Icons.Default.Email, null, tint = labelColor) },
+                modifier = Modifier.fillMaxWidth(),
+                colors = glassInputColors,
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             OutlinedTextField(
-                value = password, onValueChange = { password = it; errorMessage = null },
-                label = { Text("Senha") }, leadingIcon = { Icon(Icons.Default.Lock, null, tint = labelColor) },
+                value = password,
+                onValueChange = { input ->
+                    if (input.length <= 64) {
+                        password = input
+                        errorMessage = null
+                    }
+                },
+                label = { Text("Senha") },
+                leadingIcon = { Icon(Icons.Default.Lock, null, tint = labelColor) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, tint = labelColor)
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(), colors = glassInputColors, shape = RoundedCornerShape(12.dp), singleLine = true
+                modifier = Modifier.fillMaxWidth(),
+                colors = glassInputColors,
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
             )
 
             Row(
@@ -125,7 +143,8 @@ fun LoginScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Checkbox(
-                    checked = viewModel.rememberMe, onCheckedChange = { isChecked -> viewModel.rememberMe = isChecked },
+                    checked = viewModel.rememberMe,
+                    onCheckedChange = { isChecked -> viewModel.rememberMe = isChecked },
                     colors = CheckboxDefaults.colors(checkedColor = accentColor, uncheckedColor = labelColor, checkmarkColor = Color.White)
                 )
                 Text("Lembrar-se de mim", color = labelColor, fontSize = 14.sp)
@@ -143,13 +162,16 @@ fun LoginScreen(
 
             Button(
                 onClick = { viewModel.login(email, password, onSuccess = onLoginSuccess, onError = { msg -> errorMessage = msg }) },
-                modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                enabled = email.isNotEmpty() && password.isNotEmpty() && !viewModel.isLoading
             ) {
                 if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 else Text("ENTRAR", fontWeight = FontWeight.Bold)
             }
             Spacer(modifier = Modifier.height(16.dp))
+
             TextButton(onClick = onNavigateToRegister) {
                 Text("Não tem conta? Registre-se", color = accentColor, fontWeight = FontWeight.Bold)
             }
@@ -230,7 +252,9 @@ fun LoginScreen(
                             1 -> {
                                 OutlinedTextField(
                                     value = forgotEmail,
-                                    onValueChange = { forgotEmail = it },
+                                    onValueChange = { input ->
+                                        if (input.length <= 100) forgotEmail = input.filter { !it.isWhitespace() }
+                                    },
                                     label = { Text("E-mail") },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
@@ -242,7 +266,9 @@ fun LoginScreen(
                             2 -> {
                                 OutlinedTextField(
                                     value = viewModel.recoveryCode,
-                                    onValueChange = { if (it.length <= 6 && it.all { c -> c.isDigit() }) viewModel.recoveryCode = it },
+                                    onValueChange = {
+                                        if (it.length <= 6 && it.all { c -> c.isDigit() }) viewModel.recoveryCode = it
+                                    },
                                     label = { Text("Código (6 dígitos)") },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
@@ -254,7 +280,9 @@ fun LoginScreen(
                             3 -> {
                                 OutlinedTextField(
                                     value = viewModel.newRecoveryPassword,
-                                    onValueChange = { viewModel.newRecoveryPassword = it },
+                                    onValueChange = { input ->
+                                        if (input.length <= 64) viewModel.newRecoveryPassword = input
+                                    },
                                     label = { Text("Nova Senha") },
                                     modifier = Modifier.fillMaxWidth(),
                                     singleLine = true,
@@ -290,7 +318,11 @@ fun LoginScreen(
                             modifier = Modifier.fillMaxWidth().height(48.dp),
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                            enabled = !viewModel.isLoading
+                            enabled = !viewModel.isLoading && (
+                                    (viewModel.forgotPasswordStep == 1 && forgotEmail.isNotEmpty()) ||
+                                            (viewModel.forgotPasswordStep == 2 && viewModel.recoveryCode.length == 6) ||
+                                            (viewModel.forgotPasswordStep == 3 && viewModel.newRecoveryPassword.length >= 8)
+                                    )
                         ) {
                             if (viewModel.isLoading) {
                                 CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))

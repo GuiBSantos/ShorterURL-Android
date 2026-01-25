@@ -6,10 +6,15 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Check
@@ -21,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
@@ -30,8 +36,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import coil.compose.AsyncImage
 import com.example.shortenerapp.R
 import com.example.shortenerapp.ui.theme.ArkhipFont
@@ -69,25 +77,54 @@ fun ProfileScreen(
         onResult = { uri -> if (uri != null) viewModel.uploadAvatar(context, uri) }
     )
 
-    val isSystemDark = isSystemInDarkTheme()
-    val isDark = isSystemDark || MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val isDark = viewModel.isDarkTheme
+
     val bgImageRes = if (isDark) R.drawable.bg_dark_profile else R.drawable.bg_light_profile
-    val textColor = Color.White
+
+    val textColor = if (isDark) Color.White else Color(0xFF1E293B)
+    val subTextColor = if (isDark) Color.White.copy(0.7f) else Color(0xFF64748B)
+
     val accentColor = Color(0xFF3B82F6)
-    val labelColor = Color.White.copy(alpha = 0.7f)
+    val labelColor = if (isDark) Color.White.copy(0.7f) else Color(0xFF64748B)
     val successColor = Color(0xFF4CAF50)
+    val dangerColor = Color(0xFFFF5252)
+
+    val cardBackgroundColor = if (isDark) Color.White.copy(0.05f) else Color(0xFFF1F5F9).copy(alpha = 0.95f)
+    val cardBorderColor = if (isDark) Color.White.copy(0.1f) else Color(0xFFCBD5E1)
 
     val glassInputColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.Transparent,
         unfocusedContainerColor = Color.Transparent,
         cursorColor = accentColor,
         focusedBorderColor = accentColor,
-        unfocusedBorderColor = textColor.copy(alpha = 0.3f),
+        unfocusedBorderColor = if(isDark) Color.White.copy(0.3f) else Color(0xFF94A3B8),
         focusedTextColor = textColor,
         unfocusedTextColor = textColor,
         focusedLabelColor = accentColor,
         unfocusedLabelColor = labelColor
     )
+
+    val glassBrush = Brush.verticalGradient(
+        colors = listOf(
+            if (isDark) Color(0xFF0F172A).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.95f),
+            if (isDark) Color(0xFF0F172A).copy(alpha = 0.80f) else Color.White.copy(alpha = 0.90f)
+        )
+    )
+    val dialogTextColor = if (isDark) Color.White else Color(0xFF1E293B)
+    val dialogSubColor = if (isDark) Color.White.copy(0.7f) else Color(0xFF64748B)
+
+    val dialogInputColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = Color.Transparent,
+        unfocusedContainerColor = Color.Transparent,
+        cursorColor = accentColor,
+        focusedBorderColor = accentColor,
+        unfocusedBorderColor = dialogTextColor.copy(alpha = 0.3f),
+        focusedTextColor = dialogTextColor,
+        unfocusedTextColor = dialogTextColor,
+        focusedLabelColor = accentColor,
+        unfocusedLabelColor = dialogSubColor
+    )
+
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -96,7 +133,7 @@ fun ProfileScreen(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = if(isDark) 0.5f else 0.1f)))
 
         Column(
             modifier = Modifier
@@ -117,8 +154,8 @@ fun ProfileScreen(
                 IconButton(
                     onClick = onToggleTheme,
                     modifier = Modifier
-                        .background(Color.White.copy(0.1f), CircleShape)
-                        .border(1.dp, Color.White.copy(0.1f), CircleShape)
+                        .background(if(isDark) Color.White.copy(0.1f) else Color.Black.copy(0.05f), CircleShape)
+                        .border(1.dp, if(isDark) Color.White.copy(0.1f) else Color.Black.copy(0.1f), CircleShape)
                 ) {
                     Icon(
                         imageVector = if (isDark) Icons.Outlined.WbSunny else Icons.Default.NightsStay,
@@ -140,33 +177,44 @@ fun ProfileScreen(
                     if (viewModel.avatarUrl != null) {
                         AsyncImage(model = viewModel.avatarUrl, contentDescription = "Avatar", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
                     } else {
-                        Box(modifier = Modifier.fillMaxSize().background(Color.White.copy(0.1f)), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Person, null, modifier = Modifier.size(60.dp), tint = textColor.copy(0.5f))
+                        Box(modifier = Modifier.fillMaxSize().background(if(isDark) Color.White.copy(0.1f) else Color.White), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Person, null, modifier = Modifier.size(60.dp), tint = if(isDark) Color.White.copy(0.5f) else Color.Gray)
                         }
                     }
                 }
                 Box(
                     modifier = Modifier.align(Alignment.BottomEnd).offset((-4).dp, (-4).dp).size(36.dp).clip(CircleShape)
-                        .background(Color.Black.copy(0.5f)).border(1.dp, Color.White.copy(0.3f), CircleShape),
+                        .background(Color.Black.copy(0.6f)).border(1.dp, Color.White.copy(0.3f), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Edit, null, tint = Color.White.copy(0.9f), modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Edit, null, tint = Color.White, modifier = Modifier.size(18.dp))
                 }
                 if (viewModel.isLoading) CircularProgressIndicator(modifier = Modifier.size(120.dp), color = accentColor)
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Text(viewModel.username, style = TextStyle(fontFamily = ArkhipFont, fontSize = 26.sp, color = textColor))
-            Text(viewModel.email, fontSize = 16.sp, color = textColor.copy(0.7f))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable {
+                    viewModel.editUsernameText = viewModel.username
+                    viewModel.showEditUsernameDialog = true
+                }
+            ) {
+                Text(viewModel.username, style = TextStyle(fontFamily = ArkhipFont, fontSize = 26.sp, color = textColor))
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Default.Edit, "Editar Nome", tint = accentColor, modifier = Modifier.size(18.dp))
+            }
+
+            Text(viewModel.email, fontSize = 16.sp, color = subTextColor)
 
             Spacer(modifier = Modifier.height(40.dp))
 
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color.White.copy(0.05f), RoundedCornerShape(16.dp))
-                    .border(1.dp, Color.White.copy(0.1f), RoundedCornerShape(16.dp))
+                    .background(cardBackgroundColor, RoundedCornerShape(16.dp))
+                    .border(1.dp, cardBorderColor, RoundedCornerShape(16.dp))
                     .clip(RoundedCornerShape(16.dp))
             ) {
                 Row(
@@ -232,7 +280,7 @@ fun ProfileScreen(
                             modifier = Modifier.fillMaxWidth(), colors = glassInputColors, singleLine = true
                         )
                         if(viewModel.confirmNewPassword.isNotEmpty() && viewModel.confirmNewPassword != viewModel.newPassword) {
-                            Text("Senhas não coincidem", color = Color(0xFFFF5252), fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
+                            Text("Senhas não coincidem", color = dangerColor, fontSize = 12.sp, modifier = Modifier.padding(start = 4.dp))
                         }
 
                         Spacer(modifier = Modifier.height(20.dp))
@@ -250,7 +298,8 @@ fun ProfileScreen(
                             shape = RoundedCornerShape(12.dp),
                             enabled = !viewModel.isLoading && isFormValid
                         ) {
-                            Text("ATUALIZAR SENHA", fontWeight = FontWeight.Bold)
+                            if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                            else Text("ATUALIZAR SENHA", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -259,16 +308,177 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(30.dp))
 
             Button(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFEF4444).copy(0.8f)),
-                shape = RoundedCornerShape(16.dp)
+                onClick = {
+                    viewModel.logout()
+                    onLogout()
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .border(1.dp, dangerColor.copy(0.5f), RoundedCornerShape(16.dp)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = cardBackgroundColor
+                ),
+                shape = RoundedCornerShape(16.dp),
+                contentPadding = PaddingValues(0.dp)
             ) {
-                Icon(Icons.Default.ExitToApp, null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Sair da Conta", fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.ExitToApp, null, tint = dangerColor)
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text("Sair da Conta", color = dangerColor, fontWeight = FontWeight.Medium)
+                    }
+                }
             }
+
             Spacer(modifier = Modifier.height(20.dp))
+            TextButton(onClick = { viewModel.showDeleteAccountDialog = true }) {
+                Text("Excluir minha conta", color = dangerColor, fontWeight = FontWeight.Bold)
+            }
+            Text(
+                "Essa ação é irreversível.",
+                color = subTextColor,
+                fontSize = 12.sp
+            )
+
+            Spacer(modifier = Modifier.height(40.dp))
+        }
+    }
+
+    if (viewModel.showEditUsernameDialog) {
+        Dialog(onDismissRequest = { viewModel.showEditUsernameDialog = false }) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.Transparent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, if(isDark) Color.White.copy(0.1f) else Color.Black.copy(0.1f), RoundedCornerShape(24.dp))
+                    .padding(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(glassBrush)
+                        .padding(24.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text("Alterar Usuário", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = dialogTextColor)
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedTextField(
+                            value = viewModel.editUsernameText,
+                            onValueChange = {
+                                if(it.length <= 20) {
+                                    viewModel.editUsernameText = it.filter { c -> !c.isWhitespace() }
+                                }
+                            },
+                            label = { Text("Novo usuário") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = dialogInputColors,
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = { viewModel.showEditUsernameDialog = false }) {
+                                Text("Cancelar", color = dialogSubColor)
+                            }
+                            Button(
+                                onClick = {
+                                    viewModel.updateUsername(onSuccess = { viewModel.showEditUsernameDialog = false })
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                                shape = RoundedCornerShape(12.dp),
+                                enabled = !viewModel.isLoading && viewModel.editUsernameText.isNotBlank()
+                            ) {
+                                if(viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                                else Text("Salvar")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (viewModel.showDeleteAccountDialog) {
+        Dialog(onDismissRequest = { viewModel.showDeleteAccountDialog = false }) {
+            Surface(
+                shape = RoundedCornerShape(24.dp),
+                color = Color.Transparent,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, dangerColor.copy(0.5f), RoundedCornerShape(24.dp))
+                    .padding(16.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .background(glassBrush)
+                        .padding(24.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.Warning, null, tint = dangerColor)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Tem certeza?", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = dangerColor)
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Digite sua senha para confirmar a exclusão. Todos os seus dados serão apagados para sempre.",
+                            color = dialogSubColor, fontSize = 14.sp, textAlign = TextAlign.Center
+                        )
+
+                        Spacer(modifier = Modifier.height(20.dp))
+                        OutlinedTextField(
+                            value = viewModel.deleteAccountPassword,
+                            onValueChange = { viewModel.deleteAccountPassword = it },
+                            label = { Text("Sua senha atual") },
+                            visualTransformation = PasswordVisualTransformation(),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = dangerColor,
+                                cursorColor = dangerColor,
+                                focusedLabelColor = dangerColor,
+                                focusedTextColor = dialogTextColor,
+                                unfocusedTextColor = dialogTextColor,
+                                unfocusedBorderColor = dialogTextColor.copy(0.3f),
+                                unfocusedLabelColor = dialogSubColor
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                            TextButton(onClick = { viewModel.showDeleteAccountDialog = false }) {
+                                Text("Cancelar", color = dialogSubColor)
+                            }
+                            Button(
+                                onClick = {
+                                    viewModel.deleteAccount(onSuccess = {
+                                        viewModel.showDeleteAccountDialog = false
+                                        onLogout()
+                                    })
+                                },
+                                colors = ButtonDefaults.buttonColors(containerColor = dangerColor),
+                                shape = RoundedCornerShape(12.dp),
+                                enabled = !viewModel.isLoading && viewModel.deleteAccountPassword.isNotBlank()
+                            ) {
+                                if(viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                                else Text("Excluir Conta")
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

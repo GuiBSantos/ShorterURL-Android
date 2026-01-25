@@ -2,10 +2,12 @@ package com.example.shortenerapp.data.repository
 
 import com.example.shortenerapp.data.local.TokenManager
 import com.example.shortenerapp.data.model.ChangePasswordRequest
+import com.example.shortenerapp.data.model.DeleteAccountRequest
 import com.example.shortenerapp.data.model.ForgotPasswordRequest
 import com.example.shortenerapp.data.model.LoginRequest
 import com.example.shortenerapp.data.model.RegisterRequest
 import com.example.shortenerapp.data.model.ResetPasswordRequest
+import com.example.shortenerapp.data.model.UpdateUsernameRequest
 import com.example.shortenerapp.data.model.ValidateCodeRequest
 import com.example.shortenerapp.data.network.RetrofitClient
 import okhttp3.MultipartBody
@@ -58,4 +60,11 @@ class AuthRepository(private val tokenManager: TokenManager) {
     )
     suspend fun validateCode(email: String, code: String) =
         api.validateCode(ValidateCodeRequest(email, code))
+
+    suspend fun updateUsername(newUsername: String) = api.updateUsername(
+        UpdateUsernameRequest(
+            newUsername
+        )
+    )
+    suspend fun deleteAccount(password: String) = api.deleteAccount(DeleteAccountRequest(password))
 }

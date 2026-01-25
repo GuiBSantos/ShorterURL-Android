@@ -29,3 +29,11 @@ data class ValidateCodeRequest(
     val email: String,
     val code: String
 )
+
+data class UpdateUsernameRequest(
+    val newUsername: String
+)
+
+data class DeleteAccountRequest(
+    val password: String
+)

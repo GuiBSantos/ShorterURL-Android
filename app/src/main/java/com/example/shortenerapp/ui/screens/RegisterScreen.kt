@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Check
@@ -21,6 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -41,8 +43,8 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
-    val isSystemDark = androidx.compose.foundation.isSystemInDarkTheme()
-    val isDark = isSystemDark || MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+
     val bgImageRes = if (isDark) R.drawable.bg_dark_register else R.drawable.bg_light_register
 
     val textColor = Color.White
@@ -114,9 +116,12 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = username,
-                onValueChange = {
-                    username = it
-                    viewModel.onUsernameChange(it)
+                onValueChange = { input ->
+                    if (input.length <= 20) {
+                        val cleanInput = input.filter { !it.isWhitespace() }
+                        username = cleanInput
+                        viewModel.onUsernameChange(cleanInput)
+                    }
                 },
                 label = { Text("Usuário") },
                 leadingIcon = { Icon(Icons.Default.Person, null, tint = labelColor) },
@@ -128,6 +133,7 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = glassInputColors,
                 shape = RoundedCornerShape(12.dp),
+                singleLine = true,
                 isError = viewModel.usernameError != null,
                 supportingText = {
                     if (viewModel.usernameError != null) Text(viewModel.usernameError!!)
@@ -136,9 +142,12 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = email,
-                onValueChange = {
-                    email = it
-                    viewModel.onEmailChange(it)
+                onValueChange = { input ->
+                    if (input.length <= 100) {
+                        val cleanInput = input.filter { !it.isWhitespace() }
+                        email = cleanInput
+                        viewModel.onEmailChange(cleanInput)
+                    }
                 },
                 label = { Text("E-mail") },
                 leadingIcon = { Icon(Icons.Default.Email, null, tint = labelColor) },
@@ -150,6 +159,8 @@ fun RegisterScreen(
                 modifier = Modifier.fillMaxWidth(),
                 colors = glassInputColors,
                 shape = RoundedCornerShape(12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 isError = viewModel.emailError != null,
                 supportingText = {
                     if (viewModel.emailError != null) Text(viewModel.emailError!!)
@@ -158,7 +169,12 @@ fun RegisterScreen(
 
             OutlinedTextField(
                 value = password,
-                onValueChange = { password = it; viewModel.clearErrors() },
+                onValueChange = { input ->
+                    if (input.length <= 64) {
+                        password = input
+                        viewModel.clearErrors()
+                    }
+                },
                 label = { Text("Senha") },
                 leadingIcon = { Icon(Icons.Default.Lock, null, tint = labelColor) },
                 trailingIcon = {
@@ -169,7 +185,8 @@ fun RegisterScreen(
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 colors = glassInputColors,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                singleLine = true
             )
 
             if (password.isNotEmpty()) {
@@ -191,7 +208,8 @@ fun RegisterScreen(
                 onClick = { viewModel.register(username, email, password, onRegisterSuccess, {}) },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
+                enabled = username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && !viewModel.isLoading
             ) {
                 if (viewModel.isLoading) {
                     CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))

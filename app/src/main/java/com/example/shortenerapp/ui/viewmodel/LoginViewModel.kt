@@ -7,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.shortenerapp.data.model.LoginRequest
 import com.example.shortenerapp.data.repository.AuthRepository
+import com.example.shortenerapp.ui.utils.ErrorUtils
 import kotlinx.coroutines.launch
 
 class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
@@ -34,7 +35,7 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
                     onError("Código incorreto ou expirado.")
                 }
             } catch (e: Exception) {
-                onError("Erro de conexão.")
+                onError(ErrorUtils.parseError(e))
             } finally {
                 isLoading = false
             }
@@ -58,7 +59,7 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
                     onError("Falha ao enviar e-mail. Verifique se o endereço está correto.")
                 }
             } catch (e: Exception) {
-                onError("Erro de conexão: ${e.message}")
+                onError(ErrorUtils.parseError(e))
             } finally {
                 forgotPasswordLoading = false
             }
@@ -101,7 +102,7 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
                     onError("E-mail ou senha inválidos")
                 }
             } catch (e: Exception) {
-                onError("Erro de conexão: ${e.message}")
+                onError(ErrorUtils.parseError(e))
             } finally {
                 isLoading = false
             }
@@ -120,7 +121,7 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
                     onError("Erro ao enviar e-mail.")
                 }
             } catch (e: Exception) {
-                onError("Erro de conexão.")
+                onError(ErrorUtils.parseError(e))
             } finally {
                 isLoading = false
             }
@@ -141,7 +142,7 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
                     onError("Erro ao redefinir senha.")
                 }
             } catch (e: Exception) {
-                onError("Erro de conexão.")
+                onError(ErrorUtils.parseError(e))
             } finally {
                 isLoading = false
             }

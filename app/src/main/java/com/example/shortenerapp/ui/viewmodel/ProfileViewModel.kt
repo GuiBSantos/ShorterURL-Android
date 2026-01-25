@@ -11,6 +11,7 @@ import com.example.shortenerapp.data.local.ThemeManager
 import com.example.shortenerapp.data.local.TokenManager
 import com.example.shortenerapp.data.model.ChangePasswordRequest
 import com.example.shortenerapp.data.repository.AuthRepository
+import com.example.shortenerapp.ui.utils.ErrorUtils
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
@@ -35,6 +36,11 @@ class ProfileViewModel(
     var currentPassword by mutableStateOf("")
     var newPassword by mutableStateOf("")
     var confirmNewPassword by mutableStateOf("")
+
+    var showEditUsernameDialog by mutableStateOf(false)
+    var showDeleteAccountDialog by mutableStateOf(false)
+    var editUsernameText by mutableStateOf("")
+    var deleteAccountPassword by mutableStateOf("")
 
     init {
         observeTheme()
@@ -62,6 +68,7 @@ class ProfileViewModel(
                     avatarUrl = user.avatarUrl
                 }
             } catch (e: Exception) {
+                feedbackMessage = ErrorUtils.parseError(e)
             } finally {
                 isLoading = false
             }
@@ -95,7 +102,7 @@ class ProfileViewModel(
                     feedbackMessage = "Falha no upload."
                 }
             } catch (e: Exception) {
-                feedbackMessage = "Erro de conexão: ${e.message}"
+                feedbackMessage = ErrorUtils.parseError(e)
             } finally {
                 isLoading = false
             }
@@ -126,7 +133,7 @@ class ProfileViewModel(
                     feedbackMessage = "Senha atual incorreta."
                 }
             } catch (e: Exception) {
-                feedbackMessage = "Erro de conexão."
+                feedbackMessage = ErrorUtils.parseError(e)
             } finally {
                 isLoading = false
             }
@@ -150,6 +157,49 @@ class ProfileViewModel(
         } catch (e: Exception) {
             e.printStackTrace()
             null
+        }
+    }
+
+    fun updateUsername(onSuccess: () -> Unit) {
+        if (editUsernameText.length < 3) {
+            feedbackMessage = "Mínimo 3 caracteres."
+            return
+        }
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val response = repository.updateUsername(editUsernameText)
+                if (response.isSuccessful) {
+                    username = editUsernameText
+                    feedbackMessage = "Nome de usuário alterado!"
+                    onSuccess()
+                } else {
+                    feedbackMessage = "Nome já está em uso ou inválido."
+                }
+            } catch (e: Exception) {
+                feedbackMessage = ErrorUtils.parseError(e)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    fun deleteAccount(onSuccess: () -> Unit) {
+        viewModelScope.launch {
+            isLoading = true
+            try {
+                val response = repository.deleteAccount(deleteAccountPassword)
+                if (response.isSuccessful) {
+                    tokenManager.clearToken()
+                    onSuccess()
+                } else {
+                    feedbackMessage = "Senha incorreta."
+                }
+            } catch (e: Exception) {
+                feedbackMessage = ErrorUtils.parseError(e)
+            } finally {
+                isLoading = false
+            }
         }
     }
 }

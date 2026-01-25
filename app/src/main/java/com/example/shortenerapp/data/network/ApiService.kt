@@ -1,6 +1,7 @@
 package com.example.shortenerapp.data.network
 
 import com.example.shortenerapp.data.model.ChangePasswordRequest
+import com.example.shortenerapp.data.model.DeleteAccountRequest
 import com.example.shortenerapp.data.model.ForgotPasswordRequest
 import com.example.shortenerapp.data.model.LoginRequest
 import com.example.shortenerapp.data.model.LoginResponse
@@ -8,6 +9,7 @@ import com.example.shortenerapp.data.model.RegisterRequest
 import com.example.shortenerapp.data.model.ResetPasswordRequest
 import com.example.shortenerapp.data.model.ShortenUrlRequest
 import com.example.shortenerapp.data.model.ShortenUrlResponse
+import com.example.shortenerapp.data.model.UpdateUsernameRequest
 import com.example.shortenerapp.data.model.UserResponse
 import com.example.shortenerapp.data.model.ValidateCodeRequest
 import okhttp3.MultipartBody
@@ -16,7 +18,9 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
+import retrofit2.http.HTTP
 import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
@@ -64,4 +68,9 @@ interface ApiService {
     @POST("auth/validate-code")
     suspend fun validateCode(@Body req: ValidateCodeRequest): Response<Void>
 
+    @PATCH("auth/update-username")
+    suspend fun updateUsername(@Body req: UpdateUsernameRequest): Response<Void>
+
+    @HTTP(method = "DELETE", path = "auth/delete-account", hasBody = true)
+    suspend fun deleteAccount(@Body req: DeleteAccountRequest): Response<Void>
 }

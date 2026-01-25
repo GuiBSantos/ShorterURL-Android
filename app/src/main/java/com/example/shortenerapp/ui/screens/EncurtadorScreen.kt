@@ -6,7 +6,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,6 +47,11 @@ fun EncurtadorScreen(
     onNavigateToProfile: () -> Unit,
     onToggleTheme: () -> Unit
 ) {
+    LaunchedEffect(Unit) {
+        viewModel.carregarPerfilUsuario()
+        viewModel.carregarHistorico()
+    }
+
     var urlDigitada by remember { mutableStateOf("") }
     var resultado by remember { mutableStateOf("") }
     var inputCliques by remember { mutableStateOf("") }
@@ -56,6 +60,10 @@ fun EncurtadorScreen(
     val unidades = listOf("Minutos", "Horas", "Dias")
 
     var mostrarDialogoHistorico by remember { mutableStateOf(false) }
+
+    // --- NOVOS ESTADOS PARA COMPARTILHAMENTO ---
+    var mostrarDialogoShare by remember { mutableStateOf(false) }
+    var mensagemPersonalizada by remember { mutableStateOf("") }
 
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
@@ -66,13 +74,8 @@ fun EncurtadorScreen(
 
     val textColor = Color.White
     val labelColor = textColor.copy(alpha = 0.7f)
-    val accentColor = Color(0xFF3B82F6)
 
-    val contrastButtonColor = if (isAppDark) {
-        Color(0xFF64FFDA)
-    } else {
-        Color.White
-    }
+    val contrastButtonColor = if (isAppDark) Color(0xFF64FFDA) else Color.White
 
     val transparentInputColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = Color.Transparent,
@@ -102,7 +105,7 @@ fun EncurtadorScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = if(isAppDark) 0.4f else 0.1f))
+                .background(Color.Black.copy(alpha = if(isAppDark) 0.4f else 0.2f))
         )
 
         Column(
@@ -259,7 +262,17 @@ fun EncurtadorScreen(
                                 else -> tempoRaw
                             }
                         } else null
-                        viewModel.encurtarUrl(urlDigitada, maxClicksFinal, expirationMinutes, { res -> resultado = res }, {})
+                        viewModel.encurtarUrl(
+                            urlDigitada,
+                            maxClicksFinal,
+                            expirationMinutes,
+                            onSuccess = { res ->
+                                resultado = res
+                            },
+                            onError = { erroMsg ->
+                                Toast.makeText(context, erroMsg, Toast.LENGTH_LONG).show()
+                            }
+                        )
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -276,12 +289,16 @@ fun EncurtadorScreen(
                     ),
                     enabled = isButtonEnabled
                 ) {
-                    Text(
-                        text = "Encurtar Link",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = if (isButtonEnabled) contrastButtonColor else labelColor.copy(alpha = 0.5f)
-                    )
+                    if (viewModel.isLoadingEncurtar.value) {
+                        CircularProgressIndicator(color = contrastButtonColor, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text(
+                            text = "Encurtar Link",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isButtonEnabled) contrastButtonColor else labelColor.copy(alpha = 0.5f)
+                        )
+                    }
                 }
             }
 
@@ -310,42 +327,46 @@ fun EncurtadorScreen(
                             clipboardManager.setText(AnnotatedString(resultado))
                             Toast.makeText(context, "Copiado!", Toast.LENGTH_SHORT).show()
                         }) { Icon(Icons.Default.ContentCopy, null, tint = textColor) }
+
+                        // --- BOTÃO DE SHARE MODIFICADO ---
                         IconButton(onClick = {
-                            val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                putExtra(Intent.EXTRA_TEXT, resultado)
-                                type = "text/plain"
-                            }
-                            context.startActivity(Intent.createChooser(sendIntent, "Share"))
-                        }) { Icon(Icons.Default.Share, null, tint = textColor) }
+                            mensagemPersonalizada = "" // Reseta a mensagem
+                            mostrarDialogoShare = true // Abre o Dialog
+                        }) {
+                            Icon(Icons.Default.Share, null, tint = textColor)
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
 
+        // --- DIALOG HISTÓRICO ---
         if (mostrarDialogoHistorico) {
-
+            // (Mantive sua lógica de cores do histórico que já estava boa)
             val glassGradient = Brush.verticalGradient(
                 colors = listOf(
-                    if (isAppDark) Color(0xFF0F172A).copy(alpha = 0.70f) else Color.White.copy(alpha = 0.85f),
-                    if (isAppDark) Color(0xFF0F172A).copy(alpha = 0.40f) else Color.White.copy(alpha = 0.50f)
+                    if (isAppDark) Color(0xFF0F172A).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.98f),
+                    if (isAppDark) Color(0xFF0F172A).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.90f)
                 )
             )
-            val glassBorder = if (isAppDark) Color.White.copy(0.1f) else Color(0xFFF1F5F9)
+            val glassBorder = if (isAppDark) Color.White.copy(0.1f) else Color(0xFFCBD5E1)
 
             val itemGradient = Brush.horizontalGradient(
                 colors = if (isAppDark) {
-                    listOf(Color(0xFF0F172A), Color(0xFF312E81))
+                    listOf(Color(0xFF1E293B), Color(0xFF0F172A))
                 } else {
-                    listOf(Color(0xFFFFFFFF), Color(0xFFF0F7FF))
+                    listOf(Color(0xFFF1F5F9), Color(0xFFE2E8F0))
                 }
             )
+
+            val itemBorder = if(isAppDark) Color.White.copy(0.05f) else Color(0xFFCBD5E1)
 
             val itemTitleColor = if (isAppDark) Color(0xFFC7D2FE) else Color(0xFF2563EB)
             val itemSubColor   = if (isAppDark) Color.White.copy(0.6f) else Color(0xFF64748B)
             val itemIconColor  = if (isAppDark) Color.White.copy(0.7f) else Color(0xFF64748B)
             val deleteIconColor = if (isAppDark) Color(0xFFFF8A80) else Color(0xFFEF4444)
-            val mainTitleColor = if (isAppDark) Color.White else Color(0xFF475569)
+            val mainTitleColor = if (isAppDark) Color.White else Color(0xFF334155)
 
             Dialog(onDismissRequest = { mostrarDialogoHistorico = false }) {
                 Surface(
@@ -379,7 +400,7 @@ fun EncurtadorScreen(
                                     }
                                 } else if (viewModel.historico.isEmpty()) {
                                     Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                                        Text("Nenhum histórico encontrado.", color = mainTitleColor.copy(0.7f))
+                                        Text("Nenhum histórico encontrado.", color = itemSubColor)
                                     }
                                 } else {
                                     LazyColumn(
@@ -391,7 +412,7 @@ fun EncurtadorScreen(
                                                     .fillMaxWidth()
                                                     .clip(RoundedCornerShape(16.dp))
                                                     .background(itemGradient)
-                                                    .border(1.dp, if(isAppDark) Color.White.copy(0.1f) else Color(0xFFE2E8F0), RoundedCornerShape(16.dp))
+                                                    .border(1.dp, itemBorder, RoundedCornerShape(16.dp))
                                                     .padding(14.dp),
                                                 verticalAlignment = Alignment.CenterVertically
                                             ) {
@@ -460,15 +481,134 @@ fun EncurtadorScreen(
                                     .clip(RoundedCornerShape(12.dp))
                                     .background(itemGradient)
                                     .clickable { mostrarDialogoHistorico = false }
-                                    .border(1.dp, if(isAppDark) Color.Transparent else Color(0xFFE2E8F0), RoundedCornerShape(12.dp)),
+                                    .border(1.dp, itemBorder, RoundedCornerShape(12.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "Fechar",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
-                                    color = if(isAppDark) Color.White else Color(0xFF2563EB)
+                                    color = itemTitleColor
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- NOVO DIALOG: COMPARTILHAR PERSONALIZADO ---
+        if (mostrarDialogoShare) {
+            // Reutilizando estilos para consistência
+            val glassGradient = Brush.verticalGradient(
+                colors = listOf(
+                    if (isAppDark) Color(0xFF0F172A).copy(alpha = 0.95f) else Color.White.copy(alpha = 0.98f),
+                    if (isAppDark) Color(0xFF0F172A).copy(alpha = 0.85f) else Color.White.copy(alpha = 0.90f)
+                )
+            )
+            val glassBorder = if (isAppDark) Color.White.copy(0.1f) else Color(0xFFCBD5E1)
+            val dialogTextColor = if (isAppDark) Color.White else Color(0xFF1E293B)
+            val dialogSubColor = if (isAppDark) Color.White.copy(0.7f) else Color(0xFF64748B)
+            val primaryColor = if (isAppDark) Color(0xFF64FFDA) else Color(0xFF3B82F6)
+
+            val dialogInputColors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                cursorColor = primaryColor,
+                focusedBorderColor = primaryColor,
+                unfocusedBorderColor = dialogTextColor.copy(alpha = 0.3f),
+                focusedTextColor = dialogTextColor,
+                unfocusedTextColor = dialogTextColor,
+                focusedLabelColor = primaryColor,
+                unfocusedLabelColor = dialogSubColor
+            )
+
+            Dialog(onDismissRequest = { mostrarDialogoShare = false }) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp).border(1.dp, glassBorder, RoundedCornerShape(24.dp)),
+                    shape = RoundedCornerShape(24.dp),
+                    color = Color.Transparent
+                ) {
+                    Box(modifier = Modifier.background(glassGradient).padding(24.dp)) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                            Box(
+                                modifier = Modifier
+                                    .size(48.dp)
+                                    .background(if(isAppDark) primaryColor.copy(0.1f) else Color(0xFFEFF6FF), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Share, null, tint = primaryColor)
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Compartilhar Link", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = dialogTextColor)
+                            Text("Adicione uma mensagem (opcional)", fontSize = 14.sp, color = dialogSubColor)
+
+                            Spacer(modifier = Modifier.height(24.dp))
+
+                            OutlinedTextField(
+                                value = mensagemPersonalizada,
+                                onValueChange = { mensagemPersonalizada = it },
+                                label = { Text("Mensagem") },
+                                placeholder = { Text("Ex: Olha esse link!") },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = dialogInputColors,
+                                shape = RoundedCornerShape(12.dp),
+                                maxLines = 3
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            if (mensagemPersonalizada.isNotEmpty()) {
+                                Text("Pré-visualização:", fontSize = 12.sp, color = dialogSubColor, modifier = Modifier.align(Alignment.Start))
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(if(isAppDark) Color.Black.copy(0.2f) else Color.White.copy(0.5f), RoundedCornerShape(8.dp))
+                                        .border(1.dp, glassBorder, RoundedCornerShape(8.dp))
+                                        .padding(12.dp)
+                                ) {
+                                    Text(
+                                        text = "$mensagemPersonalizada\n$resultado",
+                                        color = dialogTextColor,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                                Spacer(modifier = Modifier.height(24.dp))
+                            } else {
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+
+                            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                                TextButton(onClick = { mostrarDialogoShare = false }) {
+                                    Text("Cancelar", color = dialogSubColor)
+                                }
+                                Button(
+                                    onClick = {
+                                        val textoFinal = if (mensagemPersonalizada.isNotBlank()) {
+                                            "$mensagemPersonalizada\n\n$resultado"
+                                        } else {
+                                            resultado
+                                        }
+
+                                        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                            putExtra(Intent.EXTRA_TEXT, textoFinal)
+                                            type = "text/plain"
+                                        }
+                                        context.startActivity(Intent.createChooser(sendIntent, "Compartilhar via"))
+                                        mostrarDialogoShare = false
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Text(
+                                        "Compartilhar",
+                                        color = if(isAppDark) Color.Black else Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
