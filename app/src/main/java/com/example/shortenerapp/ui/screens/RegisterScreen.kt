@@ -1,5 +1,8 @@
 package com.example.shortenerapp.ui.screens
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +22,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -30,6 +35,9 @@ import androidx.compose.ui.unit.sp
 import com.example.shortenerapp.R
 import com.example.shortenerapp.ui.theme.ArkhipFont
 import com.example.shortenerapp.ui.viewmodel.RegisterViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun RegisterScreen(
@@ -43,10 +51,45 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    val context = LocalContext.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val bgImageRes = if (isDark) R.drawable.bg_dark_register else R.drawable.bg_light_register
+    val clientId = stringResource(id = R.string.default_web_client_id)
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(clientId)
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
+    val googleRegisterLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
+            if (idToken != null) {
+                viewModel.onGoogleRegister(
+                    idToken = idToken,
+                    onSuccess = {
+                        Toast.makeText(context, "Bem-vindo!", Toast.LENGTH_SHORT).show()
+                        onRegisterSuccess()
+                    },
+                    onError = { msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    }
+                )
+            }
+        } catch (e: ApiException) {
+            if (e.statusCode != 12501) {
+                Toast.makeText(context, "Erro Google: ${e.statusCode}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    val bgImageRes = if (isDark) R.drawable.bg_dark_register else R.drawable.bg_light_register
     val textColor = Color.White
     val labelColor = Color.White.copy(alpha = 0.7f)
     val accentColor = Color(0xFF3B82F6)
@@ -80,10 +123,7 @@ fun RegisterScreen(
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
 
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-                .padding(24.dp),
+            modifier = Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
             contentAlignment = Alignment.TopEnd
         ) {
             IconButton(
@@ -101,10 +141,7 @@ fun RegisterScreen(
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-                .systemBarsPadding(),
+            modifier = Modifier.fillMaxSize().padding(24.dp).systemBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -135,9 +172,7 @@ fun RegisterScreen(
                 shape = RoundedCornerShape(12.dp),
                 singleLine = true,
                 isError = viewModel.usernameError != null,
-                supportingText = {
-                    if (viewModel.usernameError != null) Text(viewModel.usernameError!!)
-                }
+                supportingText = { if (viewModel.usernameError != null) Text(viewModel.usernameError!!) }
             )
 
             OutlinedTextField(
@@ -162,9 +197,7 @@ fun RegisterScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                 isError = viewModel.emailError != null,
-                supportingText = {
-                    if (viewModel.emailError != null) Text(viewModel.emailError!!)
-                }
+                supportingText = { if (viewModel.emailError != null) Text(viewModel.emailError!!) }
             )
 
             OutlinedTextField(
@@ -220,6 +253,41 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(0.3f))
+                Text(" ou ", color = Color.White.copy(0.7f), fontSize = 12.sp)
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(0.3f))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = {
+                    if (!viewModel.isLoading) {
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            googleRegisterLauncher.launch(googleSignInClient.signInIntent)
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.White.copy(alpha = 0.05f),
+                    contentColor = Color.White
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(0.3f))
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Registrar com Google", fontWeight = FontWeight.Bold)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             TextButton(onClick = onBackToLogin) {
                 Text("Já tem uma conta? Entrar", color = accentColor)
             }
@@ -236,11 +304,7 @@ fun PasswordRequirementRow(text: String, isValid: Boolean, successColor: Color, 
             tint = if (isValid) successColor else defaultColor,
             modifier = Modifier.size(16.dp)
         )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = text,
-            color = if (isValid) successColor else defaultColor,
-            fontSize = 12.sp
-        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(text = text, color = if (isValid) successColor else defaultColor, fontSize = 12.sp)
     }
 }

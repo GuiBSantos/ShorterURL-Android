@@ -8,9 +8,14 @@ import androidx.lifecycle.viewModelScope
 import com.example.shortenerapp.data.model.LoginRequest
 import com.example.shortenerapp.data.repository.AuthRepository
 import com.example.shortenerapp.ui.utils.ErrorUtils
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
+@HiltViewModel
+class LoginViewModel @Inject constructor(
+    private val repository: AuthRepository
+) : ViewModel() {
 
     var forgotPasswordLoading by mutableStateOf(false)
 
@@ -22,6 +27,29 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
     var recoveryCode by mutableStateOf("")
     var newRecoveryPassword by mutableStateOf("")
 
+    fun onGoogleLogin(idToken: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        isLoading = true
+        viewModelScope.launch {
+            try {
+                val response = repository.googleLogin(idToken)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val loginResponse = response.body()!!
+
+                    repository.saveToken(loginResponse.token)
+                    repository.saveRememberMe(rememberMe)
+
+                    onSuccess()
+                } else {
+                    onError("Falha na autenticação com Google.")
+                }
+            } catch (e: Exception) {
+                onError(ErrorUtils.parseError(e))
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     fun validateCode(email: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         viewModelScope.launch {
@@ -65,11 +93,12 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
             }
         }
     }
+
     fun resetState() {
         isLoading = false
     }
-    fun login(email: String, pass: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
 
+    fun login(email: String, pass: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
         if (email.isBlank()) {
             onError("Preencha o e-mail")
             return
@@ -92,11 +121,8 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
 
                 if (response.isSuccessful && response.body() != null) {
                     val loginResponse = response.body()!!
-
                     repository.saveToken(loginResponse.token)
-
                     repository.saveRememberMe(rememberMe)
-
                     onSuccess()
                 } else {
                     onError("E-mail ou senha inválidos")
@@ -148,6 +174,4 @@ class LoginViewModel(private val repository: AuthRepository) : ViewModel() {
             }
         }
     }
-
-
 }

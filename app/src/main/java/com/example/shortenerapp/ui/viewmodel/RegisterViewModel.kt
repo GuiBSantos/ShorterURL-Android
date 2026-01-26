@@ -30,6 +30,30 @@ class RegisterViewModel(private val repository: AuthRepository) : ViewModel() {
     var generalError by mutableStateOf<String?>(null)
         private set
 
+    fun onGoogleRegister(idToken: String, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        isLoading = true
+        viewModelScope.launch {
+            try {
+                val response = repository.googleLogin(idToken)
+
+                if (response.isSuccessful && response.body() != null) {
+                    val loginResponse = response.body()!!
+
+                    repository.saveToken(loginResponse.token)
+                    repository.saveRememberMe(true)
+
+                    onSuccess()
+                } else {
+                    onError("Falha ao registrar com Google.")
+                }
+            } catch (e: Exception) {
+                onError(ErrorUtils.parseError(e))
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
     fun onUsernameChange(newUsername: String) {
 
         usernameCheckJob?.cancel()

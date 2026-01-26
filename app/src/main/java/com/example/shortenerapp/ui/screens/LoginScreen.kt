@@ -1,16 +1,22 @@
 package com.example.shortenerapp.ui.screens
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.NightsStay
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material.icons.outlined.WbSunny
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,6 +28,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -34,13 +41,16 @@ import androidx.compose.ui.window.Dialog
 import com.example.shortenerapp.R
 import com.example.shortenerapp.ui.theme.ArkhipFont
 import com.example.shortenerapp.ui.viewmodel.LoginViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit,
-    onToggleTheme: () -> Unit
+    onToggleTheme: () -> Unit,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -51,11 +61,49 @@ fun LoginScreen(
     var forgotEmail by remember { mutableStateOf("") }
 
     val context = LocalContext.current
-
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
 
-    val bgImageRes = if (isDark) R.drawable.bg_dark_login else R.drawable.bg_light_login
+    val clientId = stringResource(id = R.string.default_web_client_id)
 
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(clientId)
+            .requestEmail()
+            .build()
+    }
+
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            val idToken = account.idToken
+
+            if (idToken != null) {
+                viewModel.onGoogleLogin(
+                    idToken = idToken,
+                    onSuccess = {
+                        Toast.makeText(context, "Login realizado com sucesso!", Toast.LENGTH_SHORT).show()
+                        onLoginSuccess()
+                    },
+                    onError = { msg ->
+                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
+                    }
+                )
+            } else {
+                Toast.makeText(context, "Erro: Token vazio.", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: ApiException) {
+            if (e.statusCode != 12501) {
+                Toast.makeText(context, "Falha Google: ${e.statusCode}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    val bgImageRes = if (isDark) R.drawable.bg_dark_login else R.drawable.bg_light_login
     val textColor = Color.White
     val labelColor = Color.White.copy(alpha = 0.7f)
     val accentColor = Color(0xFF3B82F6)
@@ -170,6 +218,44 @@ fun LoginScreen(
                 if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                 else Text("ENTRAR", fontWeight = FontWeight.Bold)
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f).padding(end = 8.dp), color = labelColor.copy(0.5f))
+                Text("ou", color = labelColor, fontSize = 12.sp)
+                HorizontalDivider(modifier = Modifier.weight(1f).padding(start = 8.dp), color = labelColor.copy(0.5f))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = {
+                    if (!viewModel.isLoading) {
+                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (isDark) Color.White.copy(0.05f) else Color.White,
+                    contentColor = if (isDark) Color.White else Color.Black
+                ),
+                border = BorderStroke(1.dp, labelColor.copy(0.3f))
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Logo Google",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Entrar com Google", fontWeight = FontWeight.Bold)
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             TextButton(onClick = onNavigateToRegister) {

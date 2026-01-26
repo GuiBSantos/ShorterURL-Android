@@ -37,3 +37,9 @@ data class UpdateUsernameRequest(
 data class DeleteAccountRequest(
     val password: String
 )
+
+data class GoogleLoginRequest(val token: String)
+
+data class GoogleLoginResponse(
+    val token: String
+)

@@ -28,10 +28,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -44,6 +44,8 @@ import coil.compose.AsyncImage
 import com.example.shortenerapp.R
 import com.example.shortenerapp.ui.theme.ArkhipFont
 import com.example.shortenerapp.ui.viewmodel.ProfileViewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @Composable
 fun ProfileScreen(
@@ -60,6 +62,15 @@ fun ProfileScreen(
     var showConfirmPass by remember { mutableStateOf(false) }
 
     val arrowRotation by animateFloatAsState(targetValue = if (isPasswordExpanded) 180f else 0f, label = "arrow")
+
+    val clientId = stringResource(id = R.string.default_web_client_id)
+    val gso = remember {
+        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(clientId)
+            .requestEmail()
+            .build()
+    }
+    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
 
     LaunchedEffect(Unit) {
         viewModel.fetchUserProfile()
@@ -309,8 +320,11 @@ fun ProfileScreen(
 
             Button(
                 onClick = {
-                    viewModel.logout()
-                    onLogout()
+
+                    googleSignInClient.signOut().addOnCompleteListener {
+                        viewModel.logout()
+                        onLogout()
+                    }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -465,7 +479,9 @@ fun ProfileScreen(
                                 onClick = {
                                     viewModel.deleteAccount(onSuccess = {
                                         viewModel.showDeleteAccountDialog = false
-                                        onLogout()
+                                        googleSignInClient.signOut().addOnCompleteListener {
+                                            onLogout()
+                                        }
                                     })
                                 },
                                 colors = ButtonDefaults.buttonColors(containerColor = dangerColor),

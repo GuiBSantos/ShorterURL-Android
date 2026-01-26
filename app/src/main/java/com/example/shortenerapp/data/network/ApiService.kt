@@ -3,6 +3,8 @@ package com.example.shortenerapp.data.network
 import com.example.shortenerapp.data.model.ChangePasswordRequest
 import com.example.shortenerapp.data.model.DeleteAccountRequest
 import com.example.shortenerapp.data.model.ForgotPasswordRequest
+import com.example.shortenerapp.data.model.GoogleLoginRequest
+import com.example.shortenerapp.data.model.GoogleLoginResponse
 import com.example.shortenerapp.data.model.LoginRequest
 import com.example.shortenerapp.data.model.LoginResponse
 import com.example.shortenerapp.data.model.RegisterRequest
@@ -73,4 +75,8 @@ interface ApiService {
 
     @HTTP(method = "DELETE", path = "auth/delete-account", hasBody = true)
     suspend fun deleteAccount(@Body req: DeleteAccountRequest): Response<Void>
+
+    @POST("auth/google")
+    suspend fun loginWithGoogle(@Body request: GoogleLoginRequest): Response<GoogleLoginResponse>
+
 }

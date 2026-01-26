@@ -4,15 +4,20 @@ import com.example.shortenerapp.data.local.TokenManager
 import com.example.shortenerapp.data.model.ChangePasswordRequest
 import com.example.shortenerapp.data.model.DeleteAccountRequest
 import com.example.shortenerapp.data.model.ForgotPasswordRequest
+import com.example.shortenerapp.data.model.GoogleLoginRequest
+import com.example.shortenerapp.data.model.GoogleLoginResponse
 import com.example.shortenerapp.data.model.LoginRequest
+import com.example.shortenerapp.data.model.LoginResponse
 import com.example.shortenerapp.data.model.RegisterRequest
 import com.example.shortenerapp.data.model.ResetPasswordRequest
 import com.example.shortenerapp.data.model.UpdateUsernameRequest
 import com.example.shortenerapp.data.model.ValidateCodeRequest
 import com.example.shortenerapp.data.network.RetrofitClient
 import okhttp3.MultipartBody
+import retrofit2.Response
+import javax.inject.Inject
 
-class AuthRepository(private val tokenManager: TokenManager) {
+class AuthRepository @Inject constructor(private val tokenManager: TokenManager) {
     private val api = RetrofitClient.getService(tokenManager)
 
     suspend fun login(loginRequest: LoginRequest) = api.login(loginRequest)
@@ -67,4 +72,9 @@ class AuthRepository(private val tokenManager: TokenManager) {
         )
     )
     suspend fun deleteAccount(password: String) = api.deleteAccount(DeleteAccountRequest(password))
+
+    suspend fun googleLogin(token: String): Response<GoogleLoginResponse> {
+        val request = GoogleLoginRequest(token)
+        return api.loginWithGoogle(request)
+    }
 }
