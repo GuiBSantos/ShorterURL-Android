@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "714026211863",
+    "project_id": "shorterurl-277ba",
+    "storage_bucket": "shorterurl-277ba.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:714026211863:android:3b294f6eab4b8e8732da52",
+        "android_client_info": {
+          "package_name": "com.example.shortenerapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyClJ1fY5Lzs9z73VZSjGUhoZ3HAdffsvDo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

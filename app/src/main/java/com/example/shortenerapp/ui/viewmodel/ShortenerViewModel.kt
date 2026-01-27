@@ -24,13 +24,20 @@ class ShortenerViewModel(private val repository: UrlRepository) : ViewModel() {
         carregarPerfilUsuario()
     }
 
+    fun clearState() {
+        historico.clear()
+        userAvatarUrl.value = null
+        isLoadingEncurtar.value = false
+        isLoadingHistorico.value = false
+    }
+
     fun carregarPerfilUsuario() {
         viewModelScope.launch {
             try {
-
                 val response = repository.getUserProfile()
                 if (response.isSuccessful && response.body() != null) {
-                    userAvatarUrl.value = response.body()!!.avatarUrl
+                    val user = response.body()!!
+                    userAvatarUrl.value = if (user.avatarUrl != null) "${user.avatarUrl}?t=${System.currentTimeMillis()}" else null
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

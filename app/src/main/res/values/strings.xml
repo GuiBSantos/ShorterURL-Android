@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">ShortenerApp</string>
+    <string name="app_name">Shorten</string>
+    <string name="default_web_client_id">714026211863-7utplck143l6d6ea65d58d12lbp64ina.apps.googleusercontent.com</string>
 </resources>

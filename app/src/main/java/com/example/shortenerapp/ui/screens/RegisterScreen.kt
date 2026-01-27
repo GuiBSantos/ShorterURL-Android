@@ -7,9 +7,11 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Check
@@ -39,6 +41,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 
+
 @Composable
 fun RegisterScreen(
     viewModel: RegisterViewModel,
@@ -51,259 +54,112 @@ fun RegisterScreen(
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        username = ""
+        email = ""
+        password = ""
+        viewModel.resetState()
+    }
+
     val context = LocalContext.current
     val isDark = MaterialTheme.colorScheme.background.luminance() < 0.5f
-
     val clientId = stringResource(id = R.string.default_web_client_id)
-    val gso = remember {
-        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestIdToken(clientId)
-            .requestEmail()
-            .build()
-    }
+    val gso = remember { GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).requestIdToken(clientId).requestEmail().build() }
     val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
-
-    val googleRegisterLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    val googleRegisterLauncher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
         val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
         try {
             val account = task.getResult(ApiException::class.java)
-            val idToken = account.idToken
-            if (idToken != null) {
-                viewModel.onGoogleRegister(
-                    idToken = idToken,
-                    onSuccess = {
-                        Toast.makeText(context, "Bem-vindo!", Toast.LENGTH_SHORT).show()
-                        onRegisterSuccess()
-                    },
-                    onError = { msg ->
-                        Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
-                    }
-                )
+            if (account.idToken != null) {
+                viewModel.onGoogleRegister(account.idToken!!, { Toast.makeText(context, "Bem-vindo!", Toast.LENGTH_SHORT).show(); onRegisterSuccess() }, { msg -> Toast.makeText(context, msg, Toast.LENGTH_LONG).show() })
             }
-        } catch (e: ApiException) {
-            if (e.statusCode != 12501) {
-                Toast.makeText(context, "Erro Google: ${e.statusCode}", Toast.LENGTH_SHORT).show()
-            }
-        }
+        } catch (e: ApiException) { if (e.statusCode != 12501) Toast.makeText(context, "Erro Google: ${e.statusCode}", Toast.LENGTH_SHORT).show() }
     }
 
     val bgImageRes = if (isDark) R.drawable.bg_dark_register else R.drawable.bg_light_register
+    val logoRes = if (isDark) R.drawable.ic_logo_app_dark else R.drawable.ic_logo_app_light
     val textColor = Color.White
     val labelColor = Color.White.copy(alpha = 0.7f)
     val accentColor = Color(0xFF3B82F6)
     val errorColor = Color(0xFFFF5252)
     val successColor = Color(0xFF4CAF50)
-
-    val glassInputColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = Color.Transparent,
-        unfocusedContainerColor = Color.Transparent,
-        cursorColor = accentColor,
-        focusedBorderColor = accentColor,
-        unfocusedBorderColor = textColor.copy(alpha = 0.5f),
-        focusedTextColor = textColor,
-        unfocusedTextColor = textColor,
-        focusedLabelColor = accentColor,
-        unfocusedLabelColor = labelColor,
-        errorBorderColor = errorColor,
-        errorLabelColor = errorColor,
-        errorCursorColor = errorColor,
-        errorSupportingTextColor = errorColor,
-        errorTextColor = textColor
-    )
+    val glassInputColors = OutlinedTextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, cursorColor = accentColor, focusedBorderColor = accentColor, unfocusedBorderColor = textColor.copy(alpha = 0.5f), focusedTextColor = textColor, unfocusedTextColor = textColor, focusedLabelColor = accentColor, unfocusedLabelColor = labelColor, errorBorderColor = errorColor, errorLabelColor = errorColor, errorCursorColor = errorColor, errorSupportingTextColor = errorColor, errorTextColor = textColor)
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Image(
-            painter = painterResource(id = bgImageRes),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        Image(painter = painterResource(id = bgImageRes), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
         Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
 
-        Box(
-            modifier = Modifier.fillMaxSize().systemBarsPadding().padding(24.dp),
-            contentAlignment = Alignment.TopEnd
+        // 1. CONTEÚDO PRINCIPAL (Primeiro)
+        BoxWithConstraints(
+            modifier = Modifier.fillMaxSize()
         ) {
-            IconButton(
-                onClick = onToggleTheme,
+            val containerModifier = if (maxWidth > 600.dp) Modifier.width(500.dp) else Modifier.fillMaxWidth()
+
+            Column(
                 modifier = Modifier
-                    .background(Color.White.copy(0.1f), CircleShape)
-                    .border(1.dp, Color.White.copy(0.1f), CircleShape)
+                    .fillMaxSize()
+                    .systemBarsPadding()
+                    .imePadding()
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Icon(
-                    imageVector = if (isDark) Icons.Outlined.WbSunny else Icons.Default.NightsStay,
-                    contentDescription = "Tema",
-                    tint = textColor
-                )
+                Column(
+                    modifier = containerModifier,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Image(painter = painterResource(id = logoRes), contentDescription = "Logo", modifier = Modifier.size(100.dp).padding(bottom = 16.dp))
+                    Text("Nova Conta", style = TextStyle(fontFamily = ArkhipFont, fontSize = 36.sp, color = textColor))
+                    Text("Junte-se a nós hoje", color = labelColor)
+                    Spacer(modifier = Modifier.height(30.dp))
+
+                    OutlinedTextField(value = username, onValueChange = { if (it.length <= 20) { username = it.filter { c -> !c.isWhitespace() }; viewModel.onUsernameChange(username) } }, label = { Text("Usuário") }, leadingIcon = { Icon(Icons.Default.Person, null, tint = labelColor) }, trailingIcon = { if (viewModel.isCheckingUsername) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = accentColor) }, modifier = Modifier.fillMaxWidth(), colors = glassInputColors, shape = RoundedCornerShape(12.dp), singleLine = true, isError = viewModel.usernameError != null, supportingText = { if (viewModel.usernameError != null) Text(viewModel.usernameError!!) })
+
+                    OutlinedTextField(value = email, onValueChange = { if (it.length <= 100) { email = it.filter { c -> !c.isWhitespace() }; viewModel.onEmailChange(email) } }, label = { Text("E-mail") }, leadingIcon = { Icon(Icons.Default.Email, null, tint = labelColor) }, trailingIcon = { if (viewModel.isCheckingEmail) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = accentColor) }, modifier = Modifier.fillMaxWidth(), colors = glassInputColors, shape = RoundedCornerShape(12.dp), singleLine = true, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email), isError = viewModel.emailError != null, supportingText = { if (viewModel.emailError != null) Text(viewModel.emailError!!) })
+
+                    OutlinedTextField(value = password, onValueChange = { if (it.length <= 64) { password = it; viewModel.clearErrors() } }, label = { Text("Senha") }, leadingIcon = { Icon(Icons.Default.Lock, null, tint = labelColor) }, trailingIcon = { IconButton(onClick = { passwordVisible = !passwordVisible }) { Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, tint = labelColor) } }, visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth(), colors = glassInputColors, shape = RoundedCornerShape(12.dp), singleLine = true)
+
+                    if (password.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Column(modifier = Modifier.fillMaxWidth().padding(start = 8.dp)) {
+                            PasswordRequirementRow("Mínimo 8 caracteres", password.length >= 8, successColor, labelColor)
+                            PasswordRequirementRow("Uma letra maiúscula", password.any { it.isUpperCase() }, successColor, labelColor)
+                            PasswordRequirementRow("Um caractere especial (@#!)", password.any { !it.isLetterOrDigit() }, successColor, labelColor)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                    if (viewModel.generalError != null) Text(text = viewModel.generalError!!, color = errorColor, modifier = Modifier.padding(bottom = 8.dp))
+
+                    Button(onClick = { viewModel.register(username, email, password, onRegisterSuccess, {}) }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.buttonColors(containerColor = accentColor), enabled = username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && !viewModel.isLoading) { if (viewModel.isLoading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp)) else Text("CRIAR CONTA", fontWeight = FontWeight.Bold) }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) { HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(0.3f)); Text(" ou ", color = Color.White.copy(0.7f), fontSize = 12.sp); HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(0.3f)) }
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    OutlinedButton(onClick = { if (!viewModel.isLoading) googleSignInClient.signOut().addOnCompleteListener { googleRegisterLauncher.launch(googleSignInClient.signInIntent) } }, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(12.dp), colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.White.copy(alpha = 0.05f), contentColor = Color.White), border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(0.3f))) { Image(painter = painterResource(id = R.drawable.ic_google), contentDescription = null, modifier = Modifier.size(24.dp)); Spacer(modifier = Modifier.width(12.dp)); Text("Registrar com Google", fontWeight = FontWeight.Bold) }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(onClick = onBackToLogin) { Text("Já tem uma conta? Entrar", color = accentColor) }
+                }
             }
         }
 
-        Column(
-            modifier = Modifier.fillMaxSize().padding(24.dp).systemBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            Text("Nova Conta", style = TextStyle(fontFamily = ArkhipFont, fontSize = 36.sp, color = textColor))
-            Text("Junte-se a nós hoje", color = labelColor)
-
-            Spacer(modifier = Modifier.height(30.dp))
-
-            OutlinedTextField(
-                value = username,
-                onValueChange = { input ->
-                    if (input.length <= 20) {
-                        val cleanInput = input.filter { !it.isWhitespace() }
-                        username = cleanInput
-                        viewModel.onUsernameChange(cleanInput)
-                    }
-                },
-                label = { Text("Usuário") },
-                leadingIcon = { Icon(Icons.Default.Person, null, tint = labelColor) },
-                trailingIcon = {
-                    if (viewModel.isCheckingUsername) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = accentColor)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = glassInputColors,
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                isError = viewModel.usernameError != null,
-                supportingText = { if (viewModel.usernameError != null) Text(viewModel.usernameError!!) }
-            )
-
-            OutlinedTextField(
-                value = email,
-                onValueChange = { input ->
-                    if (input.length <= 100) {
-                        val cleanInput = input.filter { !it.isWhitespace() }
-                        email = cleanInput
-                        viewModel.onEmailChange(cleanInput)
-                    }
-                },
-                label = { Text("E-mail") },
-                leadingIcon = { Icon(Icons.Default.Email, null, tint = labelColor) },
-                trailingIcon = {
-                    if (viewModel.isCheckingEmail) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = accentColor)
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                colors = glassInputColors,
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                isError = viewModel.emailError != null,
-                supportingText = { if (viewModel.emailError != null) Text(viewModel.emailError!!) }
-            )
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { input ->
-                    if (input.length <= 64) {
-                        password = input
-                        viewModel.clearErrors()
-                    }
-                },
-                label = { Text("Senha") },
-                leadingIcon = { Icon(Icons.Default.Lock, null, tint = labelColor) },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, tint = labelColor)
-                    }
-                },
-                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                modifier = Modifier.fillMaxWidth(),
-                colors = glassInputColors,
-                shape = RoundedCornerShape(12.dp),
-                singleLine = true
-            )
-
-            if (password.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Column(modifier = Modifier.fillMaxWidth().padding(start = 8.dp)) {
-                    PasswordRequirementRow("Mínimo 8 caracteres", password.length >= 8, successColor, labelColor)
-                    PasswordRequirementRow("Uma letra maiúscula", password.any { it.isUpperCase() }, successColor, labelColor)
-                    PasswordRequirementRow("Um caractere especial (@#!)", password.any { !it.isLetterOrDigit() }, successColor, labelColor)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            if (viewModel.generalError != null) {
-                Text(text = viewModel.generalError!!, color = errorColor, modifier = Modifier.padding(bottom = 8.dp))
-            }
-
-            Button(
-                onClick = { viewModel.register(username, email, password, onRegisterSuccess, {}) },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                enabled = username.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty() && !viewModel.isLoading
-            ) {
-                if (viewModel.isLoading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                } else {
-                    Text("CRIAR CONTA", fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(0.3f))
-                Text(" ou ", color = Color.White.copy(0.7f), fontSize = 12.sp)
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.White.copy(0.3f))
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = {
-                    if (!viewModel.isLoading) {
-                        googleSignInClient.signOut().addOnCompleteListener {
-                            googleRegisterLauncher.launch(googleSignInClient.signInIntent)
-                        }
-                    }
-                },
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White.copy(alpha = 0.05f),
-                    contentColor = Color.White
-                ),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(0.3f))
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_google),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Registrar com Google", fontWeight = FontWeight.Bold)
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextButton(onClick = onBackToLogin) {
-                Text("Já tem uma conta? Entrar", color = accentColor)
+        // 2. BOTÃO DE TEMA (Último na pilha = Z-Index mais alto)
+        Box(modifier = Modifier.fillMaxSize().systemBarsPadding().padding(24.dp), contentAlignment = Alignment.TopEnd) {
+            IconButton(onClick = onToggleTheme, modifier = Modifier.background(Color.White.copy(0.1f), CircleShape).border(1.dp, Color.White.copy(0.1f), CircleShape)) {
+                Icon(imageVector = if (isDark) Icons.Outlined.WbSunny else Icons.Default.NightsStay, contentDescription = "Tema", tint = textColor)
             }
         }
     }
 }
 
+// ... PasswordRequirementRow (mantenha) ...
 @Composable
 fun PasswordRequirementRow(text: String, isValid: Boolean, successColor: Color, defaultColor: Color) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = 2.dp)) {
-        Icon(
-            imageVector = if (isValid) Icons.Outlined.Check else Icons.Outlined.Close,
-            contentDescription = null,
-            tint = if (isValid) successColor else defaultColor,
-            modifier = Modifier.size(16.dp)
-        )
+        Icon(imageVector = if (isValid) Icons.Outlined.Check else Icons.Outlined.Close, contentDescription = null, tint = if (isValid) successColor else defaultColor, modifier = Modifier.size(16.dp))
         Spacer(modifier = Modifier.width(6.dp))
         Text(text = text, color = if (isValid) successColor else defaultColor, fontSize = 12.sp)
     }

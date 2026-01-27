@@ -8,9 +8,6 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-//    Android Studio: http://10.0.2.2:8080/
-//    Celular: http://IP:8080/
-
     private const val BASE_URL = "http://10.0.2.2:8080/"
 
     fun getService(tokenManager: TokenManager): ApiService {

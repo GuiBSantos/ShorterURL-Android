@@ -34,11 +34,11 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions {
-        jvmTarget = "11"
+        jvmTarget = "17"
     }
     buildFeatures {
         compose = true
@@ -46,6 +46,8 @@ android {
 }
 
 dependencies {
+    implementation("androidx.compose.animation:animation:1.x.x")
+    implementation("com.google.android.material:material:1.11.0")
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.compose.material:material-icons-extended")

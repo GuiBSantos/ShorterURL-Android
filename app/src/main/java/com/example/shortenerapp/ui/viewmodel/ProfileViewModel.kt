@@ -56,6 +56,26 @@ class ProfileViewModel(
         viewModelScope.launch { themeManager.toggleTheme(isChecked) }
     }
 
+    fun clearState() {
+        username = "Carregando..."
+        email = "..."
+        avatarUrl = null
+        isLoading = false
+        feedbackMessage = null
+        currentPassword = ""
+        newPassword = ""
+        confirmNewPassword = ""
+        showEditUsernameDialog = false
+        showDeleteAccountDialog = false
+        editUsernameText = ""
+        deleteAccountPassword = ""
+    }
+
+    fun logout() {
+        tokenManager.clearToken()
+        clearState()
+    }
+
     fun fetchUserProfile() {
         viewModelScope.launch {
             isLoading = true
@@ -65,7 +85,7 @@ class ProfileViewModel(
                     val user = response.body()!!
                     username = user.username
                     email = user.email ?: ""
-                    avatarUrl = user.avatarUrl
+                    avatarUrl = if (user.avatarUrl != null) "${user.avatarUrl}?t=${System.currentTimeMillis()}" else null
                 }
             } catch (e: Exception) {
                 feedbackMessage = ErrorUtils.parseError(e)
@@ -96,7 +116,8 @@ class ProfileViewModel(
 
                 val response = repository.uploadAvatar(body)
                 if (response.isSuccessful && response.body() != null) {
-                    avatarUrl = response.body()!!.avatarUrl
+                    val rawUrl = response.body()!!.avatarUrl
+                    avatarUrl = "$rawUrl?t=${System.currentTimeMillis()}"
                     feedbackMessage = "Foto atualizada com sucesso!"
                 } else {
                     feedbackMessage = "Falha no upload."
@@ -138,10 +159,6 @@ class ProfileViewModel(
                 isLoading = false
             }
         }
-    }
-
-    fun logout() {
-        tokenManager.clearToken()
     }
 
     private fun uriToFile(context: Context, uri: Uri): File? {
@@ -191,6 +208,7 @@ class ProfileViewModel(
                 val response = repository.deleteAccount(deleteAccountPassword)
                 if (response.isSuccessful) {
                     tokenManager.clearToken()
+                    clearState()
                     onSuccess()
                 } else {
                     feedbackMessage = "Senha incorreta."
